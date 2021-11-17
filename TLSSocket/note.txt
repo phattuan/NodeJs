@@ -1,0 +1,66 @@
+-- phần này nói về TLS Socket: Server and Client trong NodeJs--
+
+--how to create a key and certificate( có thể để đôi file là ky, csr ỏ để là pem (pem là tập tin dùng để lưu trữ các thứ mã hóa))
+
+//tạo khóa với thuật toán RSA ( thuật toán nằm sau gen.... với chiều dài khóa 2048bit)
+openssl genrsa -out private-key.key 2048
+
+//để xem nội dung đã được mã hóa 
+cat private-key.key 
+
+//dùng để mã giải mã khóa riêng tư và xem nội dung của nó 
+openssl rsa -text -in private-key.key -noout
+
+//tập tin khóa private chứa cả khóa public. lệnh dưới dùng để trích xuất khóa public khỏi tệp khóa riêng tư (nếu cầu)
+openssl rsa -in private-key.key -pubout -out public-key.key
+
+//tạo CSR từ key private 
+openssl req -new -key private-key.key -out csr.csr
+
+Country Name (2 letter code) [AU]: mã quốc gia (eg:US,VN,...)
+State or Province Name (full name) [Some-State]:tên quốc gia or tỉnh 
+Locality Name (eg, city) []: tên thành phố đặt công ty
+Organization Name (eg, company) [Internet Widgits Pty Ltd]:tên công ty 
+Organizational Unit Name (eg, section) []:tên cơ sở ( có thể để trống)
+Common Name (e.g. server FQDN or YOUR name) []:tên miền đủ đk 
+Email Address []:email 
+A challenge password []:để trống 
+An optional company name []:để trống 
+//----------------------------------------------------------------
+openssl genrsa -out private-key.pem 2048 
+
+openssl req -new -key private-key.pem -out csr.pem
+
+openssl x509 -req -in csr.pem -signkey private-key.pem -out public-cert.pem
+
+//----------------------------------------------------------------
+//tạo key và CSR trong 1 lệnh 
+openssl req -new \
+-newkey rsa:2048 -nodes -keyout key-private.key \
+-out csr.csr \
+-subj "/C=US/ST=Utah/L=phat/O=Your Company, Inc./OU=IT/CN=domain.com"
+
+//----------------------------------------------------------------
+
+// sử dụng lệnh sau để kiểm tra thông tin CSR (bộ chuyển mạch noout, -verify kiểm tra chữ ký của tệp để đảm bảo nó chưa được sửa đổi.  )
+openssl req -text -in csr.csr -noout -verify
+
+//----------------------------------------------------------------
+
+// gửi CSR đến key
+cat csr.csr
+
+// xem thông tin chứng chỉ (Certificate Information)
+openssl x509 -text -in csr.crt -noout
+
+// xác minh là khóa khớp 
+//Để xác minh các khóa public và riêng tư, hãy trích xuất khóa public từ mỗi tệp và tạo ra một kết xuất băm cho nó.
+//Cả ba tập tin nên chia sẻ cùng một khóa public và cùng giá trị băm. 
+//Sử dụng các lệnh sau để tạo ra một hash khóa public của mỗi tập tin: 
+
+openssl pkey -pubout -in .\private.key | openssl sha256
+openssl req -pubkey -in .\request.csr -noout | openssl sha256
+openssl x509 -pubkey -in .\certificate.crt -noout | openssl sha256
+
+// xem thêm tại https://www.digicert.com/kb/ssl-support/openssl-quick-reference-guide.htm?fbclid=IwAR2S6qO5KDENVFzEIAcn4GYkoXA4qCE-g2eTP_wOupiNQ3jfHvvEW3R_HIo
+
